@@ -36,7 +36,6 @@ class Game:
 
 	def _setcell(self,cell):
 		if (cell.x > 9 or cell.x < 0) or (cell.y > 9 or cell.y < 0):
-			print('invalid position for cell!')
 			return False
 		else:
 			self.board[cell.x, cell.y] = cell
@@ -47,14 +46,10 @@ class Game:
 		c1 = self.board[x1][y1]
 		c2 = self.board[x2][y2]
 		if c1 == c2:
-			print('same points!')
 			return False
-		print(c1,c2)
 		if c1.data != self.turn:
-			print('not your turn!')
 			return False
 		elif (c1.data == 0 or c2.data != 0):
-			print('invalid move! source empty or destination already taken!')
 			return False
 		else:
 			if self.turn == 'X':
@@ -63,7 +58,6 @@ class Game:
 			else:
 				newX = c1.x - 1
 				newY = [x for x in range(c1.y-1, c1.y+2)]
-				print(newX,newY)
 			for y in newY:
 				if (x2,y2) == (newX,y):
 					valid = True
@@ -73,7 +67,6 @@ class Game:
 				self._turn_over()
 				return True
 			else:
-				print('invalid move!')
 				return False
 
 	def capture(self,x1,y1,x2,y2):
@@ -81,14 +74,10 @@ class Game:
 		c1 = self.board[x1][y1]
 		c2 = self.board[x2][y2]
 		if c1 == c2:
-			print('same points!')
 			return False
-		print(c1,c2)
 		if c1.data != self.turn:
-			print('not your turn!')
 			return False
 		elif (c1.data == 0 or c2.data == 0):
-			print('invalid move! source or destination empty!!')
 			return False
 		else:
 			if self.turn == 'X':
@@ -97,7 +86,6 @@ class Game:
 			else:
 				newX = [x for x in range(c1.x-1,c1.x+1)]
 				newY = [x for x in range(c1.y-1, c1.y+2)]
-			print(newX,newY)
 			for x in newX:
 				for y in newY:
 					if (x2,y2) == (x,y):
@@ -108,8 +96,7 @@ class Game:
 				self._turn_over()
 				return True
 			else:
-				print('invalid move!')
-
+				return False
 
 
 	def __repr__(self):
