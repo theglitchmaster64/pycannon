@@ -5,4 +5,5 @@ from game import Game, Cell
 
 if __name__=='__main__':
 	g=Game()
-	print(g)
+	g.move(3,3,4,3)
+	g.move(6,2,5,3)

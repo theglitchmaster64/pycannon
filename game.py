@@ -28,7 +28,7 @@ class Game:
 						self._setcell(Cell(i,j,data='Y'))
 		print('game ready for player red!')
 
-	def turn_over(self):
+	def _turn_over(self):
 		if self.turn == 'X':
 			self.turn = 'Y'
 		else:
@@ -46,6 +46,9 @@ class Game:
 		valid = False
 		c1 = self.board[x1][y1]
 		c2 = self.board[x2][y2]
+		if c1 == c2:
+			print('same points!')
+			return False
 		print(c1,c2)
 		if c1.data != self.turn:
 			print('not your turn!')
@@ -54,15 +57,20 @@ class Game:
 			print('invalid move! source empty or destination already taken!')
 			return False
 		else:
-			newX = c1.x + 1
-			newY = [x for x in range(c1.y-1, c1.y+2)]
+			if self.turn == 'X':
+				newX = c1.x + 1
+				newY = [x for x in range(c1.y-1, c1.y+2)]
+			else:
+				newX = c1.x - 1
+				newY = [x for x in range(c1.y-1, c1.y+2)]
+				print(newX,newY)
 			for y in newY:
 				if (x2,y2) == (newX,y):
 					valid = True
 			if valid:
 				self._setcell(Cell(c1.x,c1.y,data=0))
 				self._setcell(Cell(c2.x, c2.y, data=c1.data))
-				self.turn_over()
+				self._turn_over()
 				return True
 			else:
 				print('invalid move!')
@@ -72,17 +80,35 @@ class Game:
 		valid = False
 		c1 = self.board[x1][y1]
 		c2 = self.board[x2][y2]
+		if c1 == c2:
+			print('same points!')
+			return False
 		print(c1,c2)
 		if c1.data != self.turn:
 			print('not your turn!')
 			return False
-		elif (c1.data == 0 or c2.data != 0):
-			print('invalid move! source empty or destination already taken!')
+		elif (c1.data == 0 or c2.data == 0):
+			print('invalid move! source or destination empty!!')
 			return False
 		else:
-			newX = [x for x in range(c1.x,c1.x+2)]
-			newY = [x for x in range(c1.y-1, c1.y+2)]
+			if self.turn == 'X':
+				newX = [x for x in range(c1.x,c1.x+2)]
+				newY = [x for x in range(c1.y-1, c1.y+2)]
+			else:
+				newX = [x for x in range(c1.x-1,c1.x+1)]
+				newY = [x for x in range(c1.y-1, c1.y+2)]
 			print(newX,newY)
+			for x in newX:
+				for y in newY:
+					if (x2,y2) == (x,y):
+						valid = True
+			if valid:
+				self._setcell(Cell(c1.x,c1.y,data=0))
+				self._setcell(Cell(c2.x,c2.y,data=c1.data))
+				self._turn_over()
+				return True
+			else:
+				print('invalid move!')
 
 
 
