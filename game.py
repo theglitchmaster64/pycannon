@@ -1,5 +1,4 @@
 import numpy
-import copy
 
 class Cell:
 
@@ -23,7 +22,8 @@ class Game:
 	def __init__(self):
 		self.turn = 1
 		self.board = numpy.empty((10,10), dtype=object)
-		self.board_backup = copy.deepcopy(self.board)
+		self.board_backup = numpy.empty((10,10), dtype=object)
+		self.metadata = ''
 		for i in range(0,10):
 			for j in range(0,10):
 				self.board[i][j] = Cell(i,j)
@@ -34,6 +34,13 @@ class Game:
 					if j%2 == 0:
 						self._setcell(Cell(i,j,data=-1))
 		print('game ready for player red!')
+
+	def snapshot(self):
+		self.board_backup = numpy.copy(self.board)
+
+	def restore(self):
+		self.board = numpy.copy(self.board_backup)
+		self._turn_over()
 
 	def eval_board(self):
 		score = 0
@@ -54,15 +61,15 @@ class Game:
 					score -= 1000
 				else:
 					score += 0
-				if (xp == 0):
-					score += 1000
-				elif (yp == 0):
-					score -= 1000
+		if xp == 0:
+			score += 1000
+		elif yp == 0:
+			score -= 1000
 		return score
 
 	def is_game_over(self):
 		score = self.eval_board()
-		if score > 1000 or score < 1000:
+		if score >= 777 or score <= -777:
 			return True
 		else:
 			return False
@@ -88,7 +95,6 @@ class Game:
 	def valid_moves(self,x,y):
 		c = self.board[x][y]
 		move = []
-		shoot = []
 		if c.data == 0:
 			return []
 		elif c.data == +1:
@@ -99,10 +105,13 @@ class Game:
 			#move
 			newX = [c.x - 1]
 			newY = [c.y - 1, c.y, c.y + 1]
-		for i in newX:
-			for j in newY:
-				if (i,j) != (x,y) and self.board[i][j].data == 0:
-					move.append((i,j))
+		try:
+			for i in newX:
+				for j in newY:
+					if (i,j) != (x,y) and self.board[i][j].data == 0:
+						move.append((i,j))
+		except IndexError as e:
+			pass
 		return move
 
 	def valid_captures(self,x,y):
@@ -118,13 +127,14 @@ class Game:
 			#capture
 			newX = [c.x - 1, c.x]
 			newY = [c.y - 1, c.y, c.y + 1]
-		for i in newX:
-			for j in newY:
-				if (i,j) != (x,y):
-					if self.turn == +1 and self.board[i][j].data == -1:
-						capture.append((i,j))
-					elif self.turn == -1 and self.board[i][j].data == +1:
-						capture.append((i,j))
+		try:
+			for i in newX:
+				for j in newY:
+					if (i,j) != (x,y):
+						if self.turn * self.board[i][j].data == -1:
+							capture.append((i,j))
+		except IndexError as e:
+			pass
 		return capture
 
 	def valid_retreats(self,x,y):
@@ -140,147 +150,149 @@ class Game:
 			#retreat
 			newX = [c.x + 2]
 			newY = [c.y - 2, c.y, c.y + 2]
-		for i in newX:
-			for j in newY:
-				if (i,j) != (x,y) and self.board[i][j].data == 0:
-					retreat.append((i,j))
+		try:
+			for i in newX:
+				for j in newY:
+					if (i,j) != (x,y) and self.board[i][j].data == 0:
+						retreat.append((i,j))
+		except IndexError as e:
+			pass
 		return retreat
 
-
-	def valid_slides(self,p1,p2,p3):
-		if p1[0] == p2[0] == p3[0]:
-			if p1[0] > 1 or p1[0] < 8:
-				return [(p1[0],p1[1]-1),(p1[0],p1[1]+1)]
-		elif p1[1] == p2[1] == p3[1]:
-			if p1[1] > 1 or p1[1] < 8:
-				return [(p1[0]-1,p1[1]),(p3[0]+1,p3[1])]
-		elif (p1[0] + p1[1]) == (p2[0] + p2[1]) == (p3[0] + p3[1]):
-			return [(p1[0]-1,p1[1]+1),(p3[0]+1),p3[1]-1]
-		elif (p3[0]-p2[0]) == (p2[0]-p1[0]) and (p3[1]-p2[1]) == (p2[1]-p1[1]):
-			return [(p1[0]-1,p1[1]-1),(p3[0]+1),p3[1]+1]
-
-	def valid_shoot(self,p1,p2,p3):
-		if p1[0] == p2[0] == p3[0]:
-			if p1[0] > 1 or p1[0] < 8:
-				return [(p1[0],p1[1]-2),(p1[0],p1[1]-3),(p1[0],p1[1]+2),(p1[0],p1[1]+3)]
-		elif p1[1] == p2[1] == p3[1]:
-			if p1[1] > 1 or p1[1] < 8:
-				return [(p1[0]-2,p1[1]),(p1[0]-3,p1[1]),(p3[0]+2,p3[1]),(p3[0]+3,p3[1])]
-		elif (p1[0] + p1[1]) == (p2[0] + p2[1]) == (p3[0] + p3[1]):
-			return [(p1[0]-2,p1[1]+2),(p1[0]-3,p1[1]+3),(p3[0]+2,p3[1]-2),(p3[0]+3,p3[1]-3)]
-		elif (p3[0]-p2[0]) == (p2[0]-p1[0]) and (p3[1]-p2[1]) == (p2[1]-p1[1]):
-			return [(p1[0]-2,p1[1]-2),(p1[0]-2,p1[1]-3),(p3[0]+2,p3[1]+2),(p3[0]+3,p3[1]+3)]
-
-	def move(self,x,y):
-		self.board_backup = copy.deepcopy(self.board)
-		moves = self.valid_moves(x,y)
-		if len(moves) == 0:
-			return False
-		else:
-			print('moves are:\n')
-			print(moves)
-			r = int(input('enter move to make '))
-			if r > len(moves) or r < 0:
-				print('move index out of range')
+	def valid_shoot(self,x,y):
+		try:
+			c = self.board[x][y]
+			retlist = []
+			if c.data == 0:
+				return []
 			else:
-				newpos = moves[r]
-				self._setcell(Cell(moves[r][0],moves[r][1],data=self.turn))
-				self._setcell(Cell(x,y,data=0))
-				self._turn_over()
-				return True
+				if self.board[x][y].data == self.board[x-1][y].data == self.board[x+1][y].data:
+					retlist = [(x-4,y),(x-3,y),(x+3,y),(x+4,y)]
+				elif self.board[x][y].data == self.board[x][y+1].data == self.board[x][y-1].data:
+					retlist = [(x,y-4),(x,y-3),(x,y+3),(x,y+4)]
+				elif self.board[x][y].data == self.board[x-1][y-1].data == self.board[x+1][y+1].data:
+					retlist = [(x-4,y-4),(x-3,y-3),(x+3,y+3),(x+4,y+4)]
+				elif self.board[x][y].data == self.board[x-1][y+1].data == self.board[x+1][y-1].data:
+					retlist = [(x+4,y-4),(x+3,y-3),(x-3,y+3),(x-4,y+4)]
+				else:
+					self.metadata = ''
+				retlist = list(filter(lambda sub: all(elem >= 0 for elem in sub), retlist))
+		except IndexError as e:
+			pass
+		return retlist
 
-	def capture(self,x,y):
-		self.board_backup = copy.deepcopy(self.board)
-		captures = self.valid_captures(x,y)
-		if len(captures) == 0:
-			return False
-		else:
-			print('moves are:\n')
-			print(captures)
-			r = int(input('enter move to make '))
-			if r > len(captures) or r < 0:
-				print('move index out of range')
+	def valid_slides(self,x,y):
+		try:
+			c = self.board[x][y]
+			retlist = []
+			if c.data == 0:
+				return []
 			else:
-				newpos = captures[r]
-				self._setcell(Cell(captures[r][0],captures[r][1],data=self.turn))
-				self._setcell(Cell(x,y,data=0))
-				self._turn_over()
-				return True
+				if self.board[x][y].data == self.board[x-1][y].data == self.board[x+1][y].data:
+					retlist = [(x-2,y),(x-1,y),(x,y),(x+1,y),(x+2,y)]
+				elif self.board[x][y].data == self.board[x][y+1].data == self.board[x][y-1].data:
+					retlist = [(x,y-2),(x,y-1),(x,y),(x,y+1),(x,y+2)]
+				elif self.board[x][y].data == self.board[x-1][y-1].data == self.board[x+1][y+1].data:
+					retlist = [(x+2,y+2),(x-1,y-1),(x,y),(x+1,y+1),(x-2,y-2)]
+				elif self.board[x][y].data == self.board[x-1][y+1].data == self.board[x+1][y-1].data:
+					retlist = [(x-1,y+2),(x-1,y+1),(x,y),(x+1,y-1),(x+2,y-2)]
+				else:
+					self.metadata = ''
+				retlist = list(filter(lambda sub: all(elem >= 0 for elem in sub), retlist))
+		except IndexError as e:
+			pass
+		return retlist
 
-	def retreat(self,x,y):
-		self.board_backup = copy.deepcopy(self.board)
-		retreats = self.valid_retreats(x,y)
-		if len(retreats) == 0:
-			return False
-		else:
-			print('moves are:\n')
-			print(retreats)
-			r = int(input('enter move to make '))
-			if r > len(retreats) or x < 0:
-				print('move index out of range')
-			else:
-				newpos = retreats[r]
-				self._setcell(Cell(retreats[r][0],retreats[r][1],data=self.turn))
-				self._setcell(Cell(x,y,data=0))
-				self._turn_over()
-				return True
-
-	def slide(self,p1,p2,p3):
-		self.board_backup = copy.deepcopy(self.board)
-		if not (self.board[p1[0]][p1[1]].data == self.board[p2[0]][p2[1]].data == self.board[p3[0]][p3[1]].data) and (self.board[p3[0]][p3[1]].data == self.turn):
-			return False
-		slides = self.valid_slides(p1,p2,p3)
-		if len(slides) == 0:
-			return False
-		else:
-			print('moves are:\n')
-			print(slides)
-			r = int(input('enter move to make '))
-			if x > len(slides) or x < 0:
-				print('move index out of range')
-			else:
-				newpos = slides[x]
-				self._setcell(Cell(slides[x][0],slides[x][1],data=self.turn))
-				if x == 0:
-					self._setcell(Cell(p3[0],p3[1],data=0))
-				elif x == 1:
-					self._setcell(Cell(p1[0],p1[1],data=0))
-				self._turn_over()
-				return True
-
-	def shoot(self,p1,p2,p3):
-		self.board_backup = copy.deepcopy(self.board)
-		if not (self.board[p1[0]][p1[1]].data == self.board[p2[0]][p2[1]].data == self.board[p3[0]][p3[1]].data) and (self.board[p3[0]][p3[1]].data == self.turn):
-			return False
-		shots = self.valid_shoot(p1,p2,p3)
-		for s in shots:
-			if s[0] < 0 or s[0] > 9:
-				shots.remove(s)
-			elif s[1] < 0 or s[1] > 9:
-				shots.remove(s)
-		if len(shots) == 0:
-			return False
-		else:
-			print('moves are:\n')
-			print(shots)
-			r = int(input('enter move to make '))
-			if x > len(shots) or x < 0:
-				print('move index out of range')
-			else:
-				newpos = shots[x]
-				if self.board[newpos[0]][newpos[1]] == -self.turn:
-					self._setcell(Cell(newpos[0],newpos[1],data=self.turn))
-				self._turn_over()
-				return True
 
 	def gen_move_list(self,x,y):
 		m = self.valid_moves(x,y)
 		r = self.valid_retreats(x,y)
 		c = self.valid_captures(x,y)
-		x = m + r + c
-		res = list(filter(lambda sub: all(elem >= 0 for elem in sub), x))
-		return res
+		res_m = list(filter(lambda sub: all(elem >= 0 for elem in sub), m))
+		res_r = list(filter(lambda sub: all(elem >= 0 for elem in sub), r))
+		res_c = list(filter(lambda sub: all(elem >= 0 for elem in sub), c))
+		res_sl = self.valid_slides(x,y)
+		res_sh = self.valid_shoot(x,y)
+		return {'pos':(x,y),'moves':res_m,'retreats':res_r,'captures':res_c,'slides':res_sl,'shoot':res_sh}
 
+
+	def move(self,x,y,pos):
+		self.snapshot()
+		moves = self.gen_move_list(x,y)['moves']
+		if len(moves) == 0:
+			return False
+		if pos not in moves:
+			return False
+		else:
+			self._setcell(Cell(x,y,data=0))
+			self._setcell(Cell(pos[0],pos[1],data=self.turn))
+			self._turn_over()
+			return True
+
+	def capture(self,x,y,pos):
+		self.snapshot()
+		captures = self.gen_move_list(x,y)['captures']
+		if len(captures) == 0:
+			return False
+		if pos not in captures or self.board[pos[0]][pos[1]].data == 0 or self.board[pos[0]][pos[1]]:
+			return False
+		else:
+			self._setcell(Cell(x,y,data=0))
+			self._setcell(Cell(pos[0],pos[1],data=self.turn))
+			self._turn_over()
+			return True
+
+	def retreat(self,x,y,pos):
+		self.snapshot()
+		retreats = self.gen_move_list(x,y)['retreats']
+		if len(retreats) == 0:
+			return False
+		if pos in retreats or self.board[pos[0]][pos[1]].data == 0:
+			self._setcell(Cell(x,y,data=0))
+			self._setcell(Cell(pos[0],pos[1],data=self.turn))
+			self._turn_over()
+			return True
+
+	def slide(self,x,y,flag=1):
+		try:
+			self.snapshot()
+			slides = self.gen_move_list(x,y)['slides']
+			if len(slides) == 0:
+				return False
+			if flag == -1:
+				pos = slides[0]
+			else:
+				pos = slides[-1]
+			if pos in slides and self.board[pos[0]][pos[1]].data == 0:
+				if flag == -1:
+					for t in range(0,3):
+						self._setcell(Cell(slides[t][0],slides[t][1],data=self.turn))
+					for s in range(3,5):
+						self._setcell(Cell(slides[s][0],slides[s][1],data=0))
+				elif flag == 1:
+					for t in range(0,2):
+						self._setcell(Cell(slides[t][0],slides[t][1],data=0))
+					for s in range(2,5):
+						self._setcell(Cell(slides[s][0],slides[s][1],data=self.turn))
+				self._turn_over()
+		except Exception as e:
+			pass
+		return True
+
+	def shoot(self,x,y,pos):
+		try:
+			self.snapshot()
+			shoots = self.gen_move_list(x,y)['shoot']
+			if len(shoots) == 0:
+				return False
+			if pos not in shoots or self.board[pos[0]][pos[1]].data != -self.turn:
+				return False
+			else:
+				self._setcell(Cell(pos[0],pos[1],data=0))
+				self._turn_over()
+				return True
+		except:
+			pass
 
 	def __repr__(self):
 		retstr = 'turn:{}\nboard:\n'.format(self.turn)
