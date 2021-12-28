@@ -17,11 +17,16 @@ class Board:
 					if j%2 == 0:
 						self.matrix[i][j] = 'y'
 
+	def __repr__(self):
+		retstr = '\b'
+		for i in range(10):
+			for j in range(10):
+				retstr += self.getpos((i,j)) + ' '
+			retstr += '\n'
+		return retstr
+
 	def getpos(self,pos):
-		if 0<pos[1]<9 and 0<pos[0]<9:
-			return self.matrix[pos[0]][pos[1]]
-		else:
-			return False
+		return self.matrix[pos[0]][pos[1]]
 
 	def setpos(self,pos,data):
 		try:
@@ -48,9 +53,14 @@ class Player:
 	def place_town(self,pos):
 		if (pos[0] == 0) and (0 < pos[1] < 9):
 			self.board.setpos((pos),self.txt.upper())
+			self.town = pos
 			return True
 		elif (pos[0] == 9) and (0 < pos[1] < 9):
 			self.board.setpos((pos),self.txt.upper())
+			self.town = pos
 			return True
 		else:
 			return False
+
+	def gen_moves(self):
+		print('todo')
